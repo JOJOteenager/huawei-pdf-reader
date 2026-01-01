@@ -36,7 +36,8 @@ version = 0.1.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.2.1,pillow,pymupdf,python-docx,opencc-python-reimplemented,requests
+# Note: pymupdf and opencc require native compilation, using pure-python alternatives
+requirements = python3,kivy==2.2.1,pillow,requests,certifi,charset-normalizer,idna,urllib3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -274,7 +275,8 @@ android.logcat_filters = *:S python:D
 
 # (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 # In past, was `android.arch` as we weren't supporting builds for multiple archs at the same time.
-android.archs = arm64-v8a, armeabi-v7a
+# Using single arch to speed up build and avoid compilation issues
+android.archs = arm64-v8a
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
