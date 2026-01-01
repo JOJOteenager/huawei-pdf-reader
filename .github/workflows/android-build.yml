@@ -1,0 +1,118 @@
+# GitHub Actions workflow for building Android APK
+# 华为平板PDF阅读器 - Android 自动构建
+
+name: Android Build
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libgstreamer1.0-dev \
+          gstreamer1.0-plugins-base \
+          gstreamer1.0-plugins-good \
+          libmtdev-dev \
+          xclip \
+          xsel \
+          libtool \
+          pkg-config \
+          autoconf \
+          automake \
+          cmake \
+          libltdl-dev \
+          libffi-dev \
+          libssl-dev \
+          python3-dev \
+          openjdk-17-jdk \
+          unzip \
+          zip
+    
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer cython==0.29.36
+        pip install kivy[base]==2.2.1
+    
+    - name: Cache Buildozer
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          .buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+    
+    - name: Build APK (Debug)
+      if: github.event_name == 'pull_request'
+      run: |
+        buildozer -v android debug
+      timeout-minutes: 60
+    
+    - name: Build APK (Release)
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      run: |
+        buildozer -v android release
+      timeout-minutes: 60
+    
+    - name: Build APK (Debug for main branch)
+      if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+      run: |
+        buildozer -v android debug
+      timeout-minutes: 60
+    
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: huawei-pdf-reader-apk
+        path: bin/*.apk
+        retention-days: 30
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
