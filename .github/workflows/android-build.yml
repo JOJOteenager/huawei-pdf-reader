@@ -6,15 +6,13 @@ name: Android Build
 on:
   push:
     branches: [ main, develop ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
@@ -23,7 +21,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
     
     - name: Install system dependencies
       run: |
@@ -31,34 +29,20 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           git \
-          ffmpeg \
-          libsdl2-dev \
-          libsdl2-image-dev \
-          libsdl2-mixer-dev \
-          libsdl2-ttf-dev \
-          libportmidi-dev \
-          libswscale-dev \
-          libavformat-dev \
-          libavcodec-dev \
-          zlib1g-dev \
-          libgstreamer1.0-dev \
-          gstreamer1.0-plugins-base \
-          gstreamer1.0-plugins-good \
-          libmtdev-dev \
-          xclip \
-          xsel \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          autoconf \
           libtool \
           pkg-config \
-          autoconf \
-          automake \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
           cmake \
-          libltdl-dev \
           libffi-dev \
           libssl-dev \
-          python3-dev \
-          openjdk-17-jdk \
-          unzip \
-          zip
+          automake
     
     - name: Set up Java
       uses: actions/setup-java@v4
@@ -68,51 +52,36 @@ jobs:
     
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install buildozer cython==0.29.36
-        pip install kivy==2.2.1
+        python -m pip install --upgrade pip wheel setuptools
+        pip install buildozer==1.5.0
+        pip install cython==0.29.36
     
-    - name: Cache Buildozer
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.buildozer
-          .buildozer
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-        restore-keys: |
-          ${{ runner.os }}-buildozer-
-    
-    - name: Build APK (Debug)
-      if: github.event_name == 'pull_request'
+    - name: Build APK
       run: |
-        buildozer -v android debug
-      timeout-minutes: 60
-    
-    - name: Build APK (Release)
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-      run: |
-        buildozer -v android release
-      timeout-minutes: 60
-    
-    - name: Build APK (Debug for main branch)
-      if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
-      run: |
-        buildozer -v android debug
-      timeout-minutes: 60
+        yes | buildozer android debug 2>&1 | tee build.log || true
+        # Check if APK was created
+        if ls bin/*.apk 1> /dev/null 2>&1; then
+          echo "APK built successfully!"
+        else
+          echo "Build failed, showing last 200 lines of log:"
+          tail -200 build.log
+          exit 1
+        fi
+      timeout-minutes: 90
     
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: huawei-pdf-reader-apk
         path: bin/*.apk
         retention-days: 30
+        if-no-files-found: ignore
     
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
+    - name: Upload build log
+      uses: actions/upload-artifact@v4
+      if: failure()
       with:
-        files: bin/*.apk
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: build-log
+        path: build.log
+        retention-days: 7

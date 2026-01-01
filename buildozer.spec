@@ -36,8 +36,8 @@ version = 0.1.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-# Note: pymupdf and opencc require native compilation, using pure-python alternatives
-requirements = python3,kivy==2.2.1,pillow,requests,certifi,charset-normalizer,idna,urllib3
+# Minimal requirements for initial build
+requirements = python3,kivy
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -107,7 +107,7 @@ android.api = 33
 android.minapi = 26
 
 # (int) Android SDK version to use
-android.sdk = 33
+# android.sdk = 33  # deprecated, using android.api instead
 
 # (str) Android NDK version to use
 android.ndk = 25b
