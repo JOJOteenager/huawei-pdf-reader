@@ -8,8 +8,9 @@ package.domain = com.app
 # Source configuration
 source.dir = src/huawei_pdf_reader
 source.include_exts = py
-source.include_patterns = main.py
+source.include_patterns = main.py,__init__.py
 source.exclude_dirs = tests,bin,venv,.git,__pycache__,ui
+source.exclude_patterns = app.py,database.py,models.py,document_processor.py,annotation_engine.py,palm_rejection.py,file_manager.py,chinese_converter.py,translation_service.py,magnifier.py,plugin_manager.py,backup_service.py
 
 # Version
 version = 0.1.0
