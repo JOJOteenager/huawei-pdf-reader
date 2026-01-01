@@ -1,157 +1,113 @@
 """
-华为平板PDF阅读器 - 主入口
-
-应用程序的主入口点，集成所有模块。
-Requirements: 整体集成
+PDF阅读器 - 主入口
+支持PDF/Word文档阅读、手写笔注释、翻译和繁简转换
 """
 
-import sys
-import argparse
-from pathlib import Path
-from typing import Optional
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
+from kivy.core.window import Window
+from kivy.utils import get_color_from_hex
 
 
-def parse_args():
-    """解析命令行参数"""
-    parser = argparse.ArgumentParser(
-        description="华为平板PDF阅读器 - 支持PDF/Word阅读、手写笔注释、翻译和繁简转换"
-    )
-    parser.add_argument(
-        "--data-dir",
-        type=Path,
-        default=None,
-        help="数据目录路径"
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="无头模式运行（用于测试）"
-    )
-    parser.add_argument(
-        "--version",
-        action="store_true",
-        help="显示版本信息"
-    )
-    parser.add_argument(
-        "file",
-        nargs="?",
-        type=Path,
-        default=None,
-        help="要打开的文档路径"
-    )
-    return parser.parse_args()
-
-
-def main() -> int:
-    """应用程序主入口"""
-    args = parse_args()
+class PDFReaderApp(App):
+    """PDF阅读器应用"""
     
-    # 显示版本信息
-    if args.version:
-        from huawei_pdf_reader import __version__
-        print(f"华为平板PDF阅读器 v{__version__}")
-        return 0
+    title = 'PDF阅读器'
     
-    print("华为平板PDF阅读器 v0.1.0")
-    print("正在初始化...")
+    def build(self):
+        # 深绿色主题
+        Window.clearcolor = get_color_from_hex('#1B5E20')
+        
+        # 主布局
+        root = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        
+        # 标题区域
+        header = BoxLayout(size_hint_y=0.15)
+        title_label = Label(
+            text='PDF阅读器',
+            font_size='28sp',
+            bold=True,
+            color=get_color_from_hex('#FFFFFF')
+        )
+        header.add_widget(title_label)
+        root.add_widget(header)
+        
+        # 版本信息
+        version_box = BoxLayout(size_hint_y=0.08)
+        version_label = Label(
+            text='版本 0.1.0',
+            font_size='14sp',
+            color=get_color_from_hex('#A5D6A7')
+        )
+        version_box.add_widget(version_label)
+        root.add_widget(version_box)
+        
+        # 功能列表
+        features_box = BoxLayout(orientation='vertical', size_hint_y=0.45, spacing=8)
+        
+        features = [
+            '📄 支持PDF和Word文档阅读',
+            '✏️ 华为手写笔注释功能',
+            '🖐️ 智能防误触系统',
+            '🔍 放大镜辅助查阅',
+            '🌐 英汉互译功能',
+            '📝 繁简中文转换',
+            '📁 文档管理和标签',
+            '☁️ 云端备份支持'
+        ]
+        
+        for feature in features:
+            feat_label = Label(
+                text=feature,
+                font_size='16sp',
+                color=get_color_from_hex('#E8F5E9'),
+                halign='left',
+                valign='middle'
+            )
+            feat_label.bind(size=feat_label.setter('text_size'))
+            features_box.add_widget(feat_label)
+        
+        root.add_widget(features_box)
+        
+        # 状态标签
+        self.status_label = Label(
+            text='应用已就绪',
+            font_size='14sp',
+            color=get_color_from_hex('#81C784'),
+            size_hint_y=0.1
+        )
+        root.add_widget(self.status_label)
+        
+        # 按钮区域
+        btn_box = BoxLayout(size_hint_y=0.15, spacing=10)
+        
+        # 开始按钮
+        start_btn = Button(
+            text='开始使用',
+            font_size='18sp',
+            background_color=get_color_from_hex('#4CAF50'),
+            background_normal=''
+        )
+        start_btn.bind(on_press=self.on_start)
+        btn_box.add_widget(start_btn)
+        
+        root.add_widget(btn_box)
+        
+        return root
     
-    try:
-        from huawei_pdf_reader.app import Application, AppConfig, get_app
-        
-        # 创建配置
-        config = AppConfig()
-        if args.data_dir:
-            config.data_dir = args.data_dir
-        
-        # 获取应用实例
-        app = get_app(config)
-        
-        # 初始化应用
-        app.initialize()
-        
-        if args.headless:
-            # 无头模式
-            print("无头模式运行")
-            return run_headless(app, args.file)
-        
-        # 运行GUI
-        return run_gui(app, args.file)
-        
-    except ImportError as e:
-        print(f"导入错误: {e}")
-        print("请确保已安装所有依赖: pip install -r requirements.txt")
-        return 1
-    except Exception as e:
-        print(f"运行错误: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+    def on_start(self, instance):
+        """开始按钮点击"""
+        self.status_label.text = '功能开发中，敬请期待...'
+        self.status_label.color = get_color_from_hex('#FFEB3B')
 
 
-def run_gui(app, file_path: Optional[Path] = None) -> int:
-    """运行GUI模式"""
-    try:
-        from huawei_pdf_reader.ui.main_window import PDFReaderApp
-        
-        # 获取设置
-        settings = app.get_settings()
-        
-        # 创建并运行Kivy应用
-        kivy_app = PDFReaderApp(settings=settings, application=app)
-        
-        # 如果指定了文件，在启动后打开
-        if file_path and file_path.exists():
-            kivy_app.initial_file = file_path
-        
-        kivy_app.run()
-        
-        # 关闭应用
-        app.shutdown()
-        
-        return 0
-    except Exception as e:
-        print(f"GUI运行错误: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+def main():
+    """主入口函数"""
+    PDFReaderApp().run()
 
 
-def run_headless(app, file_path: Optional[Path] = None) -> int:
-    """无头模式运行（用于测试）"""
-    print("华为平板PDF阅读器 v0.1.0 (无头模式)")
-    
-    # 显示已加载的服务
-    print("\n已加载的服务:")
-    print(f"  - 数据库: {app.get_database()}")
-    print(f"  - 文件管理器: {app.get_file_manager()}")
-    print(f"  - 注释引擎: {app.get_annotation_engine()}")
-    print(f"  - 防误触系统: {app.get_palm_rejection()}")
-    print(f"  - 繁简转换器: {app.get_chinese_converter()}")
-    print(f"  - 翻译服务: {app.get_translation_service()}")
-    print(f"  - 放大镜: {app.get_magnifier()}")
-    print(f"  - 插件管理器: {app.get_plugin_manager()}")
-    print(f"  - 备份服务: {app.get_backup_service()}")
-    
-    # 如果指定了文件，尝试打开
-    if file_path:
-        if file_path.exists():
-            print(f"\n打开文档: {file_path}")
-            try:
-                renderer, doc_info = app.open_document(file_path)
-                print(f"  标题: {doc_info.title}")
-                print(f"  页数: {doc_info.total_pages}")
-                print(f"  类型: {doc_info.file_type}")
-                renderer.close()
-            except Exception as e:
-                print(f"  打开失败: {e}")
-        else:
-            print(f"\n文件不存在: {file_path}")
-    
-    # 关闭应用
-    app.shutdown()
-    
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == '__main__':
+    main()

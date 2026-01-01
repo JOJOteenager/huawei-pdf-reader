@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = 华为平板PDF阅读器
+title = PDF阅读器
 
 # (str) Package name
-package.name = huaweipdf
+package.name = pdfreader
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = com.huawei.pdfreader
+package.domain = com.app.pdfreader
 
 # (str) Source code where the main.py live
 source.dir = src/huawei_pdf_reader
@@ -16,16 +16,18 @@ source.dir = src/huawei_pdf_reader
 source.include_exts = py,png,jpg,kv,atlas,json,ttf,otf
 
 # (list) List of inclusions using pattern matching
-source.include_patterns = assets/*,images/*,fonts/*
+# Only include main.py for minimal Android build
+source.include_patterns = main.py
 
 # (list) Source files to exclude (let empty to not exclude anything)
 source.exclude_exts = spec
 
 # (list) List of directory to exclude (let empty to not exclude anything)
-source.exclude_dirs = tests,bin,venv,.git,.hypothesis,__pycache__
+source.exclude_dirs = tests,bin,venv,.git,.hypothesis,__pycache__,ui
 
 # (list) List of exclusions using pattern matching
-source.exclude_patterns = license,images/*/*.jpg
+# Exclude all modules that depend on external libraries not available on Android
+source.exclude_patterns = __init__.py,app.py,database.py,models.py,document_processor.py,annotation_engine.py,palm_rejection.py,file_manager.py,chinese_converter.py,translation_service.py,magnifier.py,plugin_manager.py,backup_service.py
 
 # (str) Application versioning (method 1)
 version = 0.1.0
